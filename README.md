@@ -2,6 +2,9 @@
 
 A comprehensive **FiftyOne plugin** for testing and evaluating multiple **Vision-Language Models (VLMs)** with dynamic prompts and built-in evaluation capabilities.
 
+![Screencastfrom2025-10-0500-10-36-ezgif com-video-to-webp-converter](https://github.com/user-attachments/assets/6b569474-b50a-47e7-89b7-b981cf01d79b)
+
+
 ## What This Plugin Offers
 
 ### Panel: `Multimodality VLM Testing`
