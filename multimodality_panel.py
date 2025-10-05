@@ -25,11 +25,9 @@ class MultimodalityPanel(foo.Panel):
         if hasattr(self, "_cache"):
             return self._cache
         
-        # Get current dataset/view from FiftyOne context
         current_dataset = ctx.dataset
         current_view = ctx.view
-        
-        # Get available fields from current dataset/view
+
         available_fields = []
         if current_dataset:
             try:
@@ -42,7 +40,6 @@ class MultimodalityPanel(foo.Panel):
                 logger.error(f"Error loading dataset fields: {e}")
                 available_fields = []
         
-        # Available VLM models with detailed info
         available_models = [
             {
                 "name": "fastvlm", 
@@ -173,17 +170,24 @@ class MultimodalityPanel(foo.Panel):
                     
                 elif selected_model == "openai":
                     try:
-                        result = ctx.ops.execute_operator("query_gpt4_vision", {
-                            "query_text": dynamic_prompt,
-                            "max_tokens": 1000
-                        })
-                        if result.get("success"):
+                        dataset.select_all()
+                        operator_result = ctx.ops.execute_operator(
+                            "@jacobmarks/gpt4_vision/query_gpt4_vision",
+                            {
+                                "query_text": text_prompt,
+                                "max_tokens": 1000
+                            }
+                        )
+                        
+                        if operator_result and operator_result.get("success"):
                             result = {"success": True, "model": "OpenAI GPT-4V", "output_field": "gpt4_vision_results"}
                         else:
-                            result = {"error": result.get("error", "GPT-4 Vision execution failed")}
+                            error_msg = operator_result.get("error", "Unknown error") if operator_result else "No result returned"
+                            result = {"error": f"GPT-4 Vision execution failed: {error_msg}"}
+                            
                     except Exception as e:
                         logger.error(f"GPT-4 Vision plugin error: {e}")
-                        result = {"error": f"GPT-4 Vision plugin not available: {str(e)}"}
+                        result = {"error": f"GPT-4 Vision plugin error: {str(e)}"}
                     
                 elif selected_model == "qwen_3b":
                     foz.register_zoo_model_source("https://github.com/harpreetsahota204/qwen2_5_vl")
@@ -249,15 +253,15 @@ class MultimodalityPanel(foo.Panel):
                 "name": "driving_scene",
                 "label": "Driving Scene Analysis",
                 "prompt": """You are given a driving scene image and a proposed driving action. 
-            Based on what you see in the image, determine whether the action is appropriate for the situation. 
-            Answer only in JSON.
+                    Based on what you see in the image, determine whether the action is appropriate for the situation. 
+                    Answer only in JSON.
 
-            Format:
-            {{
-            "action": "{}",
-            "judgment": "appropriate" or "not_appropriate",
-            "reason": "<short explanation>"
-}}"""
+                    Format:
+                    {{
+                    "action": "{}",
+                    "judgment": "appropriate" or "not_appropriate",
+                    "reason": "<short explanation>"
+                }}"""
             },
             {
                 "name": "object_detection",
@@ -276,10 +280,8 @@ class MultimodalityPanel(foo.Panel):
             }
         ]
         
-        # Find the selected preset
         selected_preset = next((p for p in prompt_presets if p["name"] == preset_name), prompt_presets[0])
         
-        # Update the text prompt
         ctx.panel.state.set("text_prompt", selected_preset["prompt"])
         
         return {"success": True, "prompt": selected_preset["prompt"]}
@@ -290,26 +292,21 @@ class MultimodalityPanel(foo.Panel):
         if not text or not isinstance(text, str):
             return {"valid": False, "error": "Text input is required"}
         
-        # Check for minimum length
         if len(text.strip()) < 10:
             return {"valid": False, "error": "Text prompt should be at least 10 characters long"}
         
-        # Check for weird symbols (more permissive for VLM prompts)
         weird_symbols = re.findall(r'[^\w\s{}.,!?;:\'"()-/\\@#$%^&*+=<>|~`]', text)
         if weird_symbols:
             return {"valid": False, "error": f"Text contains invalid symbols: {set(weird_symbols)}"}
         
-        # Check for {} brackets
         if '{}' not in text and '{' not in text and '}' not in text:
             return {"valid": False, "error": "Text must contain {} for dynamic variables"}
         
-        # Check for balanced brackets
         open_brackets = text.count('{')
         close_brackets = text.count('}')
         if open_brackets != close_brackets:
             return {"valid": False, "error": "Unbalanced {} brackets"}
         
-        # Check for multiple {} placeholders
         placeholder_count = text.count('{}')
         if placeholder_count > 3:
             return {"valid": False, "error": "Too many {} placeholders (max 3 recommended)"}
@@ -320,14 +317,12 @@ class MultimodalityPanel(foo.Panel):
 
     def _update(self, ctx):
         """Update panel state (like decompose_core_panel)"""
-        # Clear cache to force reload with current context
         if hasattr(self, "_cache"):
             delattr(self, "_cache")
         
         self.load_panel_data(ctx)
         cache = self._cache
         
-        # Update panel state with current dataset info
         ctx.panel.state.set("dataset_name", cache["dataset_name"])
         ctx.panel.state.set("total_samples", cache["total_samples"])
         ctx.panel.state.set("available_fields", cache["available_fields"])
@@ -342,13 +337,10 @@ class MultimodalityPanel(foo.Panel):
             ctx.panel.state.set("last_selected_model", current_model)
             ctx.panel.state.set("error_message", None)
         
-        # Check if run button was clicked
         run_analysis = ctx.panel.get_state("run_analysis", False)
         if run_analysis and not ctx.panel.state.get("analysis_complete", False):
-            # Reset the button to prevent re-running
             ctx.panel.state.set("run_analysis", False)
             
-            # Run the analysis
             result = self.run_vlm_analysis(ctx)
             
             if result.get("error"):
@@ -414,15 +406,16 @@ class MultimodalityPanel(foo.Panel):
                 "name": "driving_scene",
                 "label": "Driving Scene Analysis",
                 "prompt": """You are given a driving scene image and a proposed driving action. 
-Based on what you see in the image, determine whether the action is appropriate for the situation. 
-Answer only in JSON.
+                    Based on what you see in the image, determine whether the action is appropriate for the situation. 
+                    Answer only in JSON.
 
-Format:
-{{
-"action": "{}",
-"judgment": "appropriate" or "not_appropriate",
-"reason": "<short explanation>"
-}}"""
+                    Format:
+                    {{
+                    "action": "{}",
+                    "judgment": "appropriate" or "not_appropriate",
+                    "reason": "<short explanation>"
+                    }}
+                """
             },
             {
                 "name": "object_detection",

@@ -124,9 +124,15 @@ session.wait()
 - Include ground truth data in prompts for better evaluation
 
 ### **Model Selection**
-- **FastVLM**: Best for speed-critical applications
+- **FastVLM**: Best for speed-critical applications and low-memory systems
 - **Qwen2.5-VL**: Excellent balance of performance and efficiency
-- **GPT-4V**: Highest accuracy for complex reasoning tasks
+- **GPT-4V**: Highest accuracy for complex reasoning tasks (no local memory usage)
+
+### **Memory Management**
+- Start with smaller models if you have limited RAM
+- Use filtered views to test on smaller subsets first
+- Monitor memory usage during model execution
+- Consider using OpenAI GPT-4V for memory-constrained environments
 
 ### **Evaluation**
 - Use FiftyOne's evaluation panel for comprehensive analysis
