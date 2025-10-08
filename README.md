@@ -42,35 +42,22 @@ An interactive panel interface for comprehensive VLM testing and evaluation with
 
 ## Installation
 
-### 1. Install Required Plugins
+### 1. Download This Plugin
 
 ```bash
-# FastVLM Plugin
-fiftyone plugins download https://github.com/harpreetsahota204/fast_vlm
-
-# Qwen2.5-VL Plugin
-fiftyone plugins download https://github.com/harpreetsahota204/qwen2_5_vl
-
-# GPT-4 Vision Plugin
-fiftyone plugins download https://github.com/jacobmarks/gpt4-vision-plugin
+fiftyone plugins download https://github.com/AdonaiVera/fiftyone-agents
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+fiftyone plugins requirements @adonaivera/fiftyone-agents --install
 ```
 
-### 3. Set Environment Variables
+### 3. Set Environment Variables [Close models]
 
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
-```
-
-### 4. Download This Plugin
-
-```bash
-fiftyone plugins download https://github.com/AdonaiVera/fiftyone-agents
 ```
 
 ## How to Use
