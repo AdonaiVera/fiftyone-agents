@@ -62,13 +62,24 @@ export OPENAI_API_KEY="your-api-key-here"
 
 ## How to Use
 
-### **Step 1: Prepare Your Dataset**
+### **Step 1: Prepare Your Dataset (your own or the demo)**
 
 ```python
 import fiftyone as fo
+import fiftyone.zoo as foz
 
-# Load your dataset
-dataset = fo.Dataset("my_vlm_dataset")
+# Option A — Load your own dataset (recommended)
+# If you already registered a dataset in FiftyOne:
+dataset = fo.load_dataset("your-dataset-name")
+
+# Option B — Use the demo dataset (quick start)
+# This downloads if needed, then we make it persistent
+dataset = foz.load_zoo_dataset(
+    "coco-2017",
+    split="validation",  
+    max_samples=10,      
+)
+dataset.persistent = True
 ```
 
 ### **Step 2: Launch FiftyOne and Open the Panel**

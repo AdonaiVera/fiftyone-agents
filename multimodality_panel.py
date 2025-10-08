@@ -106,6 +106,7 @@ class MultimodalityPanel(foo.Panel):
         ctx.panel.state.set("page", 1)
         ctx.panel.state.set("results", {})
         ctx.panel.state.set("metrics", {})
+        ctx.panel.state.set("is_running", False)
         self._update(ctx)
     
     def on_change_ctx(self, ctx):
@@ -170,7 +171,6 @@ class MultimodalityPanel(foo.Panel):
                     
                 elif selected_model == "openai":
                     try:
-                        dataset.select_all()
                         operator_result = ctx.ops.execute_operator(
                             "@jacobmarks/gpt4_vision/query_gpt4_vision",
                             {
@@ -340,6 +340,7 @@ class MultimodalityPanel(foo.Panel):
         run_analysis = ctx.panel.get_state("run_analysis", False)
         if run_analysis and not ctx.panel.state.get("analysis_complete", False):
             ctx.panel.state.set("run_analysis", False)
+            ctx.panel.state.set("is_running", True)
             
             result = self.run_vlm_analysis(ctx)
             
@@ -348,6 +349,7 @@ class MultimodalityPanel(foo.Panel):
             else:
                 ctx.panel.state.set("error_message", None)
                 ctx.panel.state.set("analysis_complete", True)
+            ctx.panel.state.set("is_running", False)
 
     def render(self, ctx):
         """Render the panel UI"""
@@ -357,6 +359,7 @@ class MultimodalityPanel(foo.Panel):
         dataset_name = ctx.panel.state.get("dataset_name", "No Dataset")
         total_samples = ctx.panel.state.get("total_samples", 0)
         analysis_complete = ctx.panel.state.get("analysis_complete", False)
+        is_running = ctx.panel.state.get("is_running", False)
         execution_time = ctx.panel.state.get("execution_time", 0)
         model_tested = ctx.panel.state.get("model_tested", "")
         
@@ -494,7 +497,17 @@ class MultimodalityPanel(foo.Panel):
                 name="error_message"
             )
  
-        if analysis_complete:
+        if is_running:
+            panel.md(
+                """
+                **Running…**
+                
+                The job is executing. You can monitor detailed progress in the Operators drawer.
+                """,
+                name="running_status"
+            )
+        
+        if analysis_complete and not is_running:
             results = ctx.panel.state.get("results", {})
             
             panel.md(
@@ -543,7 +556,7 @@ class MultimodalityPanel(foo.Panel):
                 """,
                 name="next_steps"
             )
-        else:
+        elif not is_running:
             panel.md(
                 """
                 **Ready to Run Analysis?**
