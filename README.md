@@ -75,9 +75,9 @@ dataset = fo.load_dataset("your-dataset-name")
 # Option B — Use the demo dataset (quick start)
 # This downloads if needed, then we make it persistent
 dataset = foz.load_zoo_dataset(
-    "coco-2017",
-    split="validation",  
-    max_samples=10,      
+    "https://github.com/AdonaiVera/bddoia-fiftyone",
+    split="validation",
+    max_samples=10
 )
 dataset.persistent = True
 ```

@@ -113,135 +113,6 @@ class MultimodalityPanel(foo.Panel):
         """Handle context changes"""
         self._update(ctx)
 
-    def run_vlm_analysis(self, ctx):
-        """Run VLM analysis using existing FiftyOne plugins"""
-        try:
-            selected_field = ctx.panel.get_state("selected_field")
-            text_prompt = ctx.panel.get_state("text_prompt")
-            selected_model = ctx.panel.get_state("selected_model")
-            
-            current_view = ctx.view
-            if not current_view:
-                return {"error": "No dataset/view available. Please select a dataset in FiftyOne."}
-            
-            if not selected_field:
-                return {"error": "Please select a field"}
-            
-            if not text_prompt:
-                return {"error": "Please enter a text prompt"}
-            
-            validation = self.validate_text_input(text_prompt)
-            if not validation["valid"]:
-                return {"error": validation["error"]}
-            
-            if not selected_model:
-                return {"error": "Please select a model"}
-            
-            dataset = current_view
-            
-            field_values = dataset.values(selected_field)
-            dynamic_prompts = []
-            
-            for value in field_values:
-                if value is not None:
-                    dynamic_prompt = text_prompt.replace('{}', str(value))
-                    dynamic_prompts.append(dynamic_prompt)
-                else:
-                    dynamic_prompts.append(text_prompt)
-            
-            dataset.set_values("dynamic_prompt", dynamic_prompts)
-            
-            model_start_time = time.time()
-            results = {}
-            
-            try:
-                logger.info(f"Starting model {selected_model}")
-                
-                if selected_model == "fastvlm":
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/fast_vlm")
-                    model = foz.load_zoo_model("apple/FastVLM-1.5B")
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field="fastvlm_results")
-                    result = {"success": True, "model": "FastVLM-1.5B", "output_field": "fastvlm_results"}
-                    
-                elif selected_model == "fastvlm_7b":
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/fast_vlm")
-                    model = foz.load_zoo_model("apple/FastVLM-7B")
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field="fastvlm_7b_results")
-                    result = {"success": True, "model": "FastVLM-7B", "output_field": "fastvlm_7b_results"}
-                    
-                elif selected_model == "openai":
-                    try:
-                        operator_result = ctx.ops.execute_operator(
-                            "@jacobmarks/gpt4_vision/query_gpt4_vision",
-                            {
-                                "query_text": text_prompt,
-                                "max_tokens": 1000
-                            }
-                        )
-                        
-                        if operator_result and operator_result.get("success"):
-                            result = {"success": True, "model": "OpenAI GPT-4V", "output_field": "gpt4_vision_results"}
-                        else:
-                            error_msg = operator_result.get("error", "Unknown error") if operator_result else "No result returned"
-                            result = {"error": f"GPT-4 Vision execution failed: {error_msg}"}
-                            
-                    except Exception as e:
-                        logger.error(f"GPT-4 Vision plugin error: {e}")
-                        result = {"error": f"GPT-4 Vision plugin error: {str(e)}"}
-                    
-                elif selected_model == "qwen_3b":
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/qwen2_5_vl")
-                    model = foz.load_zoo_model("Qwen/Qwen2.5-VL-3B-Instruct")
-                    model.operation = "vqa"
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field="qwen_3b_results")
-                    result = {"success": True, "model": "Qwen2.5-VL-3B", "output_field": "qwen_3b_results"}
-                    
-                elif selected_model == "qwen_7b":
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/qwen2_5_vl")
-                    model = foz.load_zoo_model("Qwen/Qwen2.5-VL-7B-Instruct")
-                    model.operation = "vqa"
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field="qwen_7b_results")
-                    result = {"success": True, "model": "Qwen2.5-VL-7B", "output_field": "qwen_7b_results"}
-                
-                else:
-                    result = {"error": f"Unknown model: {selected_model}"}
-                
-                model_time = time.time() - model_start_time
-                
-                if result.get("success"):
-                    logger.info(f"Completed model {selected_model} in {model_time:.2f} seconds")
-                    result["execution_time"] = model_time
-                    results[selected_model] = result
-                else:
-                    logger.error(f"Model {selected_model} failed: {result.get('error', 'Unknown error')}")
-                    results[selected_model] = result
-                
-            except Exception as e:
-                logger.error(f"Error running model {selected_model}: {e}")
-                results[selected_model] = {"error": str(e)}
-            
-            total_time = time.time() - model_start_time
-            logger.info(f"Model completed in {total_time:.2f} seconds")
-            
-            ctx.panel.state.set("execution_time", total_time)
-            ctx.panel.state.set("timestamp", datetime.now().isoformat())
-            ctx.panel.state.set("model_tested", selected_model)
-            ctx.panel.state.set("analysis_complete", True)
-            ctx.panel.state.set("results", results)
-            
-            ctx.ops.reload_dataset()
-            
-            return {
-                "success": True, 
-                "message": f"Successfully ran {selected_model} in {total_time:.2f}s",
-                "model": selected_model,
-                "execution_time": total_time,
-                "results": results
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in run_vlm_analysis: {e}")
-            return {"error": f"Failed to run models: {str(e)}"}
 
 
     def update_prompt_from_preset(self, ctx):
@@ -313,8 +184,6 @@ class MultimodalityPanel(foo.Panel):
         
         return {"valid": True, "error": None, "placeholder_count": placeholder_count}
 
-
-
     def _update(self, ctx):
         """Update panel state (like decompose_core_panel)"""
         if hasattr(self, "_cache"):
@@ -336,20 +205,6 @@ class MultimodalityPanel(foo.Panel):
             ctx.panel.state.set("analysis_complete", False)
             ctx.panel.state.set("last_selected_model", current_model)
             ctx.panel.state.set("error_message", None)
-        
-        run_analysis = ctx.panel.get_state("run_analysis", False)
-        if run_analysis and not ctx.panel.state.get("analysis_complete", False):
-            ctx.panel.state.set("run_analysis", False)
-            ctx.panel.state.set("is_running", True)
-            
-            result = self.run_vlm_analysis(ctx)
-            
-            if result.get("error"):
-                ctx.panel.state.set("error_message", result["error"])
-            else:
-                ctx.panel.state.set("error_message", None)
-                ctx.panel.state.set("analysis_complete", True)
-            ctx.panel.state.set("is_running", False)
 
     def render(self, ctx):
         """Render the panel UI"""
@@ -365,32 +220,12 @@ class MultimodalityPanel(foo.Panel):
         
         panel.md(
             f"""
-            #### Vision-Language Model (VLM) Testing Suite
+            #### Vision-Language Model (VLM) Suite
             
             **Compare multiple VLMs side-by-side** with comprehensive metrics and analysis.
             
             **Current Dataset:** `{dataset_name}` ({total_samples} samples)
             
-            **Supported Models (via FiftyOne Plugins):**
-            - **FastVLM** (1.5B & 7B) - Apple's efficient models via [FastVLM plugin](https://github.com/harpreetsahota204/fast_vlm)
-            - **Qwen2.5-VL** (3B & 7B) - Alibaba's powerful models via [Qwen2.5-VL plugin](https://github.com/harpreetsahota204/qwen2_5_vl)
-            - **OpenAI GPT-4V** - Industry-leading accuracy via [GPT-4 Vision plugin](https://github.com/jacobmarks/gpt4-vision-plugin)
-            
-            **Quick Setup:**
-            1. **Install Plugins** → Install required plugins (see links above)
-            2. **Set API Keys** → Set OPENAI_API_KEY environment variable for GPT-4V
-            3. **Pick Field** → Ground truth field for evaluation
-            4. **Choose Template** → Select from predefined prompts
-            5. **Customize Prompt** → Modify template or write custom
-            6. **Choose Model** → Select one VLM to test
-            7. **Run Analysis** → Execute model and store results
-            8. **Check Evaluation** → Use FiftyOne's evaluation panel
-            
-            **Available Templates:**
-            - **Driving Scene Analysis** → JSON-formatted action evaluation
-            - **Object Detection** → Simple object presence check
-            - **Scene Classification** → Scene type identification
-            - **Custom Prompt** → Write your own template
             """,
             name="intro"
         )
@@ -400,8 +235,16 @@ class MultimodalityPanel(foo.Panel):
             "selected_field",
             available_fields,
             default=available_fields[0] if available_fields else None,
-            label="Select Field (Mandatory)",
-            description="Choose a field from the selected dataset"
+            label="Prompt Field (Mandatory)",
+            description="Choose a field to use in the prompt template"
+        )
+        
+        panel.enum(
+            "ground_truth_field",
+            available_fields,
+            default=available_fields[0] if available_fields else None,
+            label="Ground Truth Field (Mandatory)",
+            description="Choose a field containing ground truth labels for evaluation"
         )
         
         prompt_presets = [
@@ -457,27 +300,6 @@ class MultimodalityPanel(foo.Panel):
         
         available_models = ctx.panel.state.get("available_models", [])
         model_choices = [model["name"] for model in available_models]
-        
-        model_info_data = []
-        for model in available_models:
-            model_info_data.append({
-                "name": model["name"],
-                "label": model["label"],
-                "size": model["size"],
-                "speed": model["speed"],
-                "accuracy": model["accuracy"],
-                "description": model["description"]
-            })
-        
-        model_info_table = TableView()
-        model_info_table.add_column("label", label="Model")
-        model_info_table.add_column("size", label="Size")
-        model_info_table.add_column("speed", label="Speed")
-        model_info_table.add_column("accuracy", label="Accuracy")
-        model_info_table.add_column("description", label="Description")
-        
-        panel.list("model_info_table", TypeObject(), view=model_info_table, label="Available Models")
-        ctx.panel.state.set("model_info_table", model_info_data)
         
         panel.enum(
             "selected_model",
@@ -567,14 +389,92 @@ class MultimodalityPanel(foo.Panel):
                 name="run_instruction"
             )
             
-            panel.bool(
-                "run_analysis",
-                default=False,
+            # Bottom action button to trigger operator or run flow
+            panel.btn(
+                "run_operator_btn",
                 label="Run VLM Analysis",
-                description="Click to execute selected model and store results in dataset"
+                on_click=self._on_click_run,
+                variant="contained",
             )
         
         return Property(panel, view=view)
+
+
+    def _on_click_run(self, ctx):
+        """Handle Run button: validate inputs then execute operator-based pipeline"""
+        try:
+            selected_model = ctx.panel.get_state("selected_model")
+            selected_field = ctx.panel.get_state("selected_field")
+            ground_truth_field = ctx.panel.get_state("ground_truth_field")
+            text_prompt = ctx.panel.get_state("text_prompt")
+
+            # Panel-side validation so the operator only runs on valid inputs
+            if not selected_field:
+                ctx.panel.state.set("error_message", "Please select a prompt field")
+                ctx.panel.state.set("analysis_complete", False)
+                return
+
+            if not ground_truth_field:
+                ctx.panel.state.set("error_message", "Please select a ground truth field")
+                ctx.panel.state.set("analysis_complete", False)
+                return
+
+            if not text_prompt:
+                ctx.panel.state.set("error_message", "Please enter a text prompt")
+                ctx.panel.state.set("analysis_complete", False)
+                return
+
+            validation = self.validate_text_input(text_prompt)
+            if not validation.get("valid"):
+                ctx.panel.state.set("error_message", validation.get("error", "Invalid prompt"))
+                ctx.panel.state.set("analysis_complete", False)
+                return
+
+            if not selected_model:
+                ctx.panel.state.set("error_message", "Please select a model")
+                ctx.panel.state.set("analysis_complete", False)
+                return
+
+            ctx.panel.state.set("error_message", None)
+
+            params = {
+                "selected_model": selected_model,
+                "selected_field": selected_field,
+                "ground_truth_field": ground_truth_field,
+                "text_prompt": text_prompt,
+            }
+
+            ctx.panel.state.set("is_running", True)
+            context = {
+                "view": ctx.view,
+                "params": params,
+            }
+            execution_result = foo.execute_operator("@adonaivera/fiftyone-agents/vlm_pipeline_operator", context)
+
+            if execution_result and hasattr(execution_result, 'result'):
+                result = execution_result.result
+                if result and hasattr(result, 'success') and result.success:
+                    ctx.panel.state.set("execution_time", getattr(result, 'execution_time', 0))
+                    ctx.panel.state.set("timestamp", getattr(result, 'timestamp', None))
+                    ctx.panel.state.set("model_tested", getattr(result, 'model', ''))
+                    ctx.panel.state.set("results", getattr(result, 'results', {}))
+                    ctx.panel.state.set("error_message", None)
+                    ctx.panel.state.set("analysis_complete", True)
+                else:
+                    error_msg = getattr(result, 'error', 'Unknown error') if result else "No result returned"
+                    ctx.panel.state.set("error_message", str(result))
+                    ctx.panel.state.set("analysis_complete", False)
+            else:
+                ctx.panel.state.set("error_message", "Failed to execute operator")
+                ctx.panel.state.set("analysis_complete", False)
+        except Exception as e:
+            logger.error(f"Error in _on_click_run: {e}")
+            ctx.panel.state.set("error_message", str(e))
+            ctx.panel.state.set("analysis_complete", False)
+        finally:
+            ctx.panel.state.set("is_running", False)
+
+
 
 
 def register(p):
