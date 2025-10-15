@@ -51,21 +51,12 @@ class MultimodalityPanel(foo.Panel):
                 "accuracy": "Good"
             },
             {
-                "name": "fastvlm_7b", 
-                "label": "FastVLM-7B", 
-                "type": "zoo",
-                "description": "Apple's larger vision-language model",
-                "size": "7B parameters", 
-                "speed": "Medium",
-                "accuracy": "Very Good"
-            },
-            {
-                "name": "openai", 
-                "label": "OpenAI GPT-4V", 
+                "name": "gemini", 
+                "label": "Gemini Vision", 
                 "type": "api",
-                "description": "OpenAI's vision model (requires API key)",
-                "size": "Unknown",
-                "speed": "Slow",
+                "description": "Google Gemini multimodal vision (requires GEMINI_API_KEY)",
+                "size": "N/A",
+                "speed": "Fast",
                 "accuracy": "Excellent"
             },
             {
@@ -76,15 +67,6 @@ class MultimodalityPanel(foo.Panel):
                 "size": "3B parameters",
                 "speed": "Medium", 
                 "accuracy": "Very Good"
-            },
-            {
-                "name": "qwen_7b", 
-                "label": "Qwen2.5-VL-7B", 
-                "type": "zoo",
-                "description": "Alibaba's larger vision-language model",
-                "size": "7B parameters",
-                "speed": "Slow",
-                "accuracy": "Excellent"
             }
         ]
         

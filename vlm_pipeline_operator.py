@@ -110,68 +110,26 @@ class RunVLMPipeline(foo.Operator):
  
                     result = {"success": True, "model": "FastVLM-1.5B", "raw_field": raw_output_field, "classification_field": classification_field}
 
-                elif selected_model == "fastvlm_7b":
-                    cleanup_memory()  
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/fast_vlm")
-                    model = foz.load_zoo_model("apple/FastVLM-7B")
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field=raw_output_field, image_field="filepath")
-                    result = {"success": True, "model": "FastVLM-7B", "raw_field": raw_output_field, "classification_field": classification_field}
-
-                elif selected_model == "openai":
-                    raw_output_field = f"{selected_model}_raw_results"
-                    underlying_dataset = dataset._dataset if hasattr(dataset, '_dataset') else dataset
-                    underlying_dataset.add_sample_field(raw_output_field, fo.StringField, overwrite=True)
+                elif selected_model == "gemini":
+                    cleanup_memory()
+                    foz.register_zoo_model_source(
+                        "https://github.com/AdonaiVera/gemini-vision-plugin",
+                        overwrite=True,
+                    )
+                    model = foz.load_zoo_model(
+                        "google/Gemini-Vision",
+                        model="gemini-2.5-flash",
+                        max_tokens=1000,
+                        max_workers=16,
+                    )
+                    dataset.apply_model(
+                        model,
+                        prompt_field="dynamic_prompt",
+                        label_field=raw_output_field,
+                        image_field="filepath",
+                    )
+                    result = {"success": True, "model": "Gemini-Vision (gemini-2.5-flash)", "raw_field": raw_output_field, "classification_field": classification_field}
                     
-                    # Create context object that supports attribute access (required by GPT-4 plugin)
-                    class ContextObject:
-                        def __init__(self, view, dataset, selected, params):
-                            self.view = view
-                            self.dataset = dataset
-                            self.selected = selected
-                            self.params = params
-                    
-                    for sample in dataset:
-                        # Create a proper context with the sample's image
-                        single_sample_view = dataset.select(sample.id)
-                        
-                        single_ctx = ContextObject(
-                            view=single_sample_view,
-                            dataset=underlying_dataset,
-                            selected=[sample.id],  
-                            params={"query_text": text_prompt, "max_tokens": 1000}
-                        )
-                        
-                        try:
-                            operator_result = foo.execute_operator(
-                                "@jacobmarks/gpt4_vision/query_gpt4_vision", context=single_ctx, params={"query_text": text_prompt, "max_tokens": 1000}
-                            )
-                            if operator_result and hasattr(operator_result, 'result') and operator_result.result:
-                                result_dict = operator_result.result
-                                if isinstance(result_dict, dict) and 'answer' in result_dict:
-                                    response_text = result_dict['answer']
-                                    if "Incorrect API key provided" in response_text or "API key" in response_text:
-                                        raise Exception(f"OpenAI API Key Error: {response_text}")
-                                    sample[raw_output_field] = response_text
-                                else:
-                                    response_text = str(result_dict)
-                                    sample[raw_output_field] = response_text
-                            else:
-                                sample[raw_output_field] = None
-                        except Exception as e:
-                            sample[raw_output_field] = None
-                            if "OpenAI API Key Error" in str(e):
-                                raise e
-                        sample.save()
-                    
-                    try:
-                        result = {"success": True, "model": "OpenAI GPT-4V", "raw_field": raw_output_field, "classification_field": classification_field}
-                    except Exception as e:
-                        if "OpenAI API Key Error" in str(e):
-                            result = {"error": str(e)}
-                        else:
-                            result = {"error": f"OpenAI execution failed: {str(e)}"}
-                    
-
                 elif selected_model == "qwen_3b":
                     cleanup_memory()  
                     foz.register_zoo_model_source("https://github.com/harpreetsahota204/qwen2_5_vl")
@@ -179,15 +137,6 @@ class RunVLMPipeline(foo.Operator):
                     model.operation = "vqa"
                     dataset.apply_model(model, prompt_field="dynamic_prompt", label_field=raw_output_field, image_field="filepath")
                     result = {"success": True, "model": "Qwen2.5-VL-3B", "raw_field": raw_output_field, "classification_field": classification_field}
-
-                elif selected_model == "qwen_7b":
-                    cleanup_memory() 
-                    foz.register_zoo_model_source("https://github.com/harpreetsahota204/qwen2_5_vl")
-                    model = foz.load_zoo_model("Qwen/Qwen2.5-VL-7B-Instruct")
-                    model.operation = "vqa"
-                    dataset.apply_model(model, prompt_field="dynamic_prompt", label_field=raw_output_field, image_field="filepath")
-
-                    result = {"success": True, "model": "Qwen2.5-VL-7B", "raw_field": raw_output_field, "classification_field": classification_field}
 
                 else:
                     result = {"error": f"Unknown model: {selected_model}"}
@@ -268,8 +217,6 @@ class RunVLMPipeline(foo.Operator):
 
         except Exception as e:
             return {"error": f"Failed to run models: {str(e)}"}
-
-
 
 def register(p):
     p.register(RunVLMPipeline)
