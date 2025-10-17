@@ -446,8 +446,7 @@ class MultimodalityPanel(foo.Panel):
                     ctx.panel.state.set("analysis_complete", True)
                 else:
                     error_msg = getattr(result, 'error', 'Unknown error') if result else "No result returned"
-                    # TODO: add error message to panel
-                    ctx.panel.state.set("error_message", str(result))
+                    ctx.panel.state.set("error_message", str(error_msg))
                     ctx.panel.state.set("analysis_complete", False)
             else:
                 ctx.panel.state.set("error_message", "Failed to execute operator")
