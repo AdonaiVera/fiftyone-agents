@@ -119,8 +119,7 @@ class RunVLMPipeline(foo.Operator):
                     model = foz.load_zoo_model(
                         "google/Gemini-Vision",
                         model="gemini-2.5-flash",
-                        max_tokens=1000,
-                        max_workers=16,
+                        max_tokens=8192,
                     )
                     dataset.apply_model(
                         model,
@@ -144,12 +143,9 @@ class RunVLMPipeline(foo.Operator):
                 model_time = time.time() - model_start_time
                 if result.get("success"):
                     result["execution_time"] = model_time
-                    
-                    # Convert raw VLM responses to classifications
                     raw_field = result["raw_field"]
                     classification_field = result["classification_field"]
                     
-                    # First, create eval_gt_field with first classifications for evaluation
                     eval_gt_field = f"{ground_truth_field}_first"
                     first_classifications = []
                     for sample in dataset:
@@ -160,7 +156,6 @@ class RunVLMPipeline(foo.Operator):
                             first_classifications.append(gt_value)
                     dataset.set_values(eval_gt_field, first_classifications)
                     
-                    # Process each sample to convert raw response to classification
                     classifications = []
                     for sample in dataset:
                         raw_response = sample.get_field(raw_field)

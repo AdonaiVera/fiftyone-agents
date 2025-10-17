@@ -14,7 +14,7 @@ An interactive panel interface for comprehensive VLM testing and evaluation with
 
 - **Dynamic View Integration**: Automatically responds to your current FiftyOne view
 - **Dynamic Prompting**: Create prompts with field substitutions using `{field_name}` syntax
-- **Multi-Model Support**: Test FastVLM, OpenAI GPT-4V, and Qwen2.5-VL models
+- **Multi-Model Support**: Test FastVLM, Gemini Vision, and Qwen2.5-VL models
 - **Built-in Evaluation**: Leverage FiftyOne's evaluation panel for comprehensive metrics
 
 #### **Supported Models**
@@ -29,9 +29,10 @@ An interactive panel interface for comprehensive VLM testing and evaluation with
 - **Qwen2.5-VL-7B** - Alibaba's powerful 7B parameter model
 - *Via [Qwen2.5-VL plugin](https://github.com/harpreetsahota204/qwen2_5_vl)*
 
-**OpenAI GPT-4V**:
-- **GPT-4 Vision** - Industry-leading accuracy and reasoning
-- *Via [GPT-4 Vision plugin](https://github.com/jacobmarks/gpt4-vision-plugin)*
+**Gemini Vision Models**:
+- **Gemini-2.5-Flash** - Google's efficient multimodal model
+- **Gemini-Pro-Vision** - Google's powerful vision-language model
+- *Via [Gemini Vision plugin](https://github.com/AdonaiVera/gemini-vision-plugin)*
 
 #### **Features**
 
@@ -54,10 +55,28 @@ fiftyone plugins download https://github.com/AdonaiVera/fiftyone-agents
 fiftyone plugins requirements @adonaivera/fiftyone-agents --install
 ```
 
-### 3. Set Environment Variables [Close models]
+### 3. Download Required VLM Plugins
+
+After installing the main plugin, you need to download the individual VLM plugins:
 
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+# Download Gemini Vision plugin
+fiftyone plugins download https://github.com/AdonaiVera/gemini-vision-plugin
+
+# Download FastVLM plugin
+fiftyone plugins download https://github.com/harpreetsahota204/fast_vlm
+
+# Download Qwen2.5-VL plugin
+fiftyone plugins download https://github.com/harpreetsahota204/qwen2_5_vl
+```
+
+> **Note**: You can also add your own VLM models by following the same pattern and integrating them into the `vlm_pipeline_operator.py` file.
+
+### 4. Set Environment Variables [For API-based models]
+
+```bash
+# For Gemini Vision (required)
+export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
 ## How to Use
@@ -126,13 +145,13 @@ session.wait()
 ### **Model Selection**
 - **FastVLM**: Best for speed-critical applications and low-memory systems
 - **Qwen2.5-VL**: Excellent balance of performance and efficiency
-- **GPT-4V**: Highest accuracy for complex reasoning tasks (no local memory usage)
+- **Gemini Vision**: High accuracy for complex reasoning tasks with API-based inference
 
 ### **Memory Management**
 - Start with smaller models if you have limited RAM
 - Use filtered views to test on smaller subsets first
 - Monitor memory usage during model execution
-- Consider using OpenAI GPT-4V for memory-constrained environments
+- Consider using Gemini Vision for memory-constrained environments (API-based)
 
 ### **Evaluation**
 - Use FiftyOne's evaluation panel for comprehensive analysis
