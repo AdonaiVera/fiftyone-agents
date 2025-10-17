@@ -460,8 +460,6 @@ class MultimodalityPanel(foo.Panel):
             ctx.panel.state.set("is_running", False)
 
 
-
-
 def register(p):
     p.register(MultimodalityPanel)
 
