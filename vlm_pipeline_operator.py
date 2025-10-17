@@ -150,10 +150,12 @@ class RunVLMPipeline(foo.Operator):
                     first_classifications = []
                     for sample in dataset:
                         gt_value = sample[ground_truth_field]
-                        if gt_value and hasattr(gt_value, 'classifications') and gt_value.classifications:
-                            first_classifications.append(gt_value.classifications[0])
-                        else:
-                            first_classifications.append(gt_value)
+                        first = (
+                            gt_value.classifications[0]
+                            if getattr(gt_value, "classifications", None)
+                            else (gt_value if getattr(gt_value, "label", None) else None)
+                        )
+                        first_classifications.append(first)
                     dataset.set_values(eval_gt_field, first_classifications)
                     
                     classifications = []
